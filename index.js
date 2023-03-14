@@ -15,6 +15,8 @@ app.use(
     origin: "http://localhost:3000",
   })
 );
+console.log(__dirname+"/routes/uploads")
+app.use("/uploads", express.static(__dirname +"/routes/uploads"))
 app.use("/api", userRoutes);
 const port = process.env.port;
 

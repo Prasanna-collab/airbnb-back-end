@@ -4,7 +4,7 @@ const User = require("../model/User");
 const { hashing, hashCompare } = require("../library/auth");
 const jwt = require("jsonwebtoken");
 const jwtd = require("jwt-decode");
-const Cookies = require("js-cookie");
+const imageDownloader = require('image-downloader')
 
 router.get("/", (req, res) => {
   res.send({ message: "Welcome to Backend" });
@@ -71,6 +71,23 @@ router.get("/profile", async (req, res) => {
 router.post('/logout', async (req,res)=>{
   res.clearCookie('token').json({ message: 'User logged out' });
 });
+
+console.log(__dirname)
+router.post('/upload-by-link', async(req,res)=>{
+  try {
+    const {link} = req.body;
+    const newFilename = Date.now() + '.jpg';
+    await imageDownloader.image({
+      url : link,
+      dest : __dirname+ "/uploads/" +newFilename
+    })
+    res.json(newFilename)
+  } catch (error) {
+    console.log("Try Different Url")
+    res.json("Try Different Url")
+  }
+   
+})
 
 
 
