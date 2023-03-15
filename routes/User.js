@@ -5,6 +5,8 @@ const { hashing, hashCompare } = require("../library/auth");
 const jwt = require("jsonwebtoken");
 const jwtd = require("jwt-decode");
 const imageDownloader = require('image-downloader')
+const multer = require('multer');
+const fs = require('fs')
 
 router.get("/", (req, res) => {
   res.send({ message: "Welcome to Backend" });
@@ -72,7 +74,7 @@ router.post('/logout', async (req,res)=>{
   res.clearCookie('token').json({ message: 'User logged out' });
 });
 
-console.log(__dirname)
+// console.log(__dirname)
 router.post('/upload-by-link', async(req,res)=>{
   try {
     const {link} = req.body;
@@ -88,8 +90,21 @@ router.post('/upload-by-link', async(req,res)=>{
   }
    
 })
+const photoMiddleware = multer({dest: "routes/uploads"}); //existing folder where our all photos whould be stored earlier in upload by link
+router.post('/upload',photoMiddleware.array('photos', 100), (req,res)=>{
+  // console.log(req.files) // will give you the array of data such as path origanlfilename, size, directory and all when the file is uplaoded in the front end.
+  const uploadedFiles = [];
+  for(let i=0; i<req.files.length;i++){
+  const {path, originalname} = req.files[i]; // if multiple files are uploaded every files should be converted. thats why files[i] iterated.
+  const parts = originalname.split('.'); //parts return a array of name and extension.
+  const extension = parts[parts.length-1];
+  const newPath = path + "." + extension;
+  fs.renameSync(path, newPath)
+  uploadedFiles.push(newPath.replace('routes\\uploads\\',""))  //just to remove the prefixes just to send the file name to the front end to show the image in setAddedPhotos.
+} 
 
-
+  res.json(uploadedFiles)
+})
 
 
 
