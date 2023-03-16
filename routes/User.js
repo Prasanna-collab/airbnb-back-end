@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../model/User");
+const Places = require('../model/Places')
 const { hashing, hashCompare } = require("../library/auth");
 const jwt = require("jsonwebtoken");
 const jwtd = require("jwt-decode");
@@ -106,7 +107,19 @@ router.post('/upload',photoMiddleware.array('photos', 100), (req,res)=>{
   res.json(uploadedFiles)
 })
 
-
+router.post('/places', (req,res)=> {
+  const {token} = req.cookies;
+  const {title, address, addedphotos, perks,description, extraInfo, checkIn, checkOut, maxGuests}= req.body;
+  jwt.verify(token, process.env.jwt_secret, {}, async(err, userInfo)=>{
+    if (err) throw err;
+   const placesInfo = await Places.create({
+      owner: userInfo.id,
+      title, address, addedphotos,perks, description, extraInfo, checkIn, checkOut, maxGuests 
+    })
+    res.json(placesInfo)
+  })
+  
+})
 
 
 
