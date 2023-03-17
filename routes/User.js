@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../model/User");
-const Places = require('../model/Places')
+const Places = require("../model/Places");
 const { hashing, hashCompare } = require("../library/auth");
 const jwt = require("jsonwebtoken");
 const jwtd = require("jwt-decode");
-const imageDownloader = require('image-downloader')
-const multer = require('multer');
-const fs = require('fs')
+const imageDownloader = require("image-downloader");
+const multer = require("multer");
+const fs = require("fs");
 
 router.get("/", (req, res) => {
   res.send({ message: "Welcome to Backend" });
@@ -40,7 +40,7 @@ router.post("/login", async (req, res) => {
         jwt.sign(
           { email: user.email, id: user._id },
           process.env.jwt_secret,
-          { },
+          {},
           (error, token) => {
             if (error) console.log(error);
             res.cookie("token", token).json(user);
@@ -62,65 +62,86 @@ router.get("/profile", async (req, res) => {
   if (token) {
     jwt.verify(token, process.env.jwt_secret, {}, async (err, userInfo) => {
       if (err) throw err;
-      const {email, id, name} = await User.findById(userInfo.id);
-      res.json({email,id,name});
+      const { email, id, name } = await User.findById(userInfo.id);
+      res.json({ email, id, name });
     });
   } else {
     res.json(null);
   }
 });
 
-
-router.post('/logout', async (req,res)=>{
-  res.clearCookie('token').json({ message: 'User logged out' });
+router.post("/logout", async (req, res) => {
+  res.clearCookie("token").json({ message: "User logged out" });
 });
 
 // console.log(__dirname)
-router.post('/upload-by-link', async(req,res)=>{
+router.post("/upload-by-link", async (req, res) => {
   try {
-    const {link} = req.body;
-    const newFilename = Date.now() + '.jpg';
+    const { link } = req.body;
+    const newFilename = Date.now() + ".jpg";
     await imageDownloader.image({
-      url : link,
-      dest : __dirname+ "/uploads/" +newFilename
-    })
-    res.json(newFilename)
+      url: link,
+      dest: __dirname + "/uploads/" + newFilename,
+    });
+    res.json(newFilename);
   } catch (error) {
-    console.log("Try Different Url")
-    res.json("Try Different Url")
+    console.log("Try Different Url");
+    res.json("Try Different Url");
   }
-   
-})
-const photoMiddleware = multer({dest: "routes/uploads"}); //existing folder where our all photos whould be stored earlier in upload by link
-router.post('/upload',photoMiddleware.array('photos', 100), (req,res)=>{
+});
+const photoMiddleware = multer({ dest: "routes/uploads" }); //existing folder where our all photos whould be stored earlier in upload by link
+router.post("/upload", photoMiddleware.array("photos", 100), (req, res) => {
   // console.log(req.files) // will give you the array of data such as path origanlfilename, size, directory and all when the file is uplaoded in the front end.
   const uploadedFiles = [];
-  for(let i=0; i<req.files.length;i++){
-  const {path, originalname} = req.files[i]; // if multiple files are uploaded every files should be converted. thats why files[i] iterated.
-  const parts = originalname.split('.'); //parts return a array of name and extension.
-  const extension = parts[parts.length-1];
-  const newPath = path + "." + extension;
-  fs.renameSync(path, newPath)
-  uploadedFiles.push(newPath.replace('routes\\uploads\\',""))  //just to remove the prefixes just to send the file name to the front end to show the image in setAddedPhotos.
-} 
+  for (let i = 0; i < req.files.length; i++) {
+    const { path, originalname } = req.files[i]; // if multiple files are uploaded every files should be converted. thats why files[i] iterated.
+    const parts = originalname.split("."); //parts return a array of name and extension.
+    const extension = parts[parts.length - 1];
+    const newPath = path + "." + extension;
+    fs.renameSync(path, newPath);
+    uploadedFiles.push(newPath.replace("routes\\uploads\\", "")); //just to remove the prefixes just to send the file name to the front end to show the image in setAddedPhotos.
+  }
 
-  res.json(uploadedFiles)
-})
+  res.json(uploadedFiles);
+});
 
-router.post('/places', (req,res)=> {
-  const {token} = req.cookies;
-  const {title, address, addedphotos, perks,description, extraInfo, checkIn, checkOut, maxGuests}= req.body;
-  jwt.verify(token, process.env.jwt_secret, {}, async(err, userInfo)=>{
+router.post("/places", (req, res) => {
+  const { token } = req.cookies;
+  const {
+    title,
+    address,
+    addedphotos,
+    perks,
+    description,
+    extraInfo,
+    checkIn,
+    checkOut,
+    maxGuests,
+  } = req.body;
+  jwt.verify(token, process.env.jwt_secret, {}, async (err, userInfo) => {
     if (err) throw err;
-   const placesInfo = await Places.create({
+    const placesInfo = await Places.create({
       owner: userInfo.id,
-      title, address, addedphotos,perks, description, extraInfo, checkIn, checkOut, maxGuests 
-    })
-    res.json(placesInfo)
-  })
-  
-})
+      title,
+      address,
+      addedphotos,
+      perks,
+      description,
+      extraInfo,
+      checkIn,
+      checkOut,
+      maxGuests,
+    });
+    res.json(placesInfo);
+  });
+});
 
-
+router.get("/places", (req, res) => {
+  const { token } = req.cookies;
+  jwt.verify(token, process.env.jwt_secret, {}, async (err, userData) => {
+    const { id } = userData;
+    res.json(await Places.find({ owner: id }));
+  });
+});
 
 module.exports = router;
