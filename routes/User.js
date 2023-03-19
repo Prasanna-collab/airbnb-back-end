@@ -117,6 +117,7 @@ router.post("/places", (req, res) => {
     checkIn,
     checkOut,
     maxGuests,
+    price
   } = req.body;
   jwt.verify(token, process.env.jwt_secret, {}, async (err, userInfo) => {
     if (err) throw err;
@@ -131,17 +132,65 @@ router.post("/places", (req, res) => {
       checkIn,
       checkOut,
       maxGuests,
+      price
     });
     res.json(placesInfo);
   });
 });
 
-router.get("/places", (req, res) => {
+router.get("/user-places", (req, res) => {
   const { token } = req.cookies;
   jwt.verify(token, process.env.jwt_secret, {}, async (err, userData) => {
     const { id } = userData;
     res.json(await Places.find({ owner: id }));
   });
 });
+
+router.get("/places/:id", async (req, res) => {
+  // res.json(req.params)
+  const { id } = req.params;
+  res.json(await Places.findById(id));
+});
+
+router.put("/places", async (req, res) => {
+  const { token } = req.cookies;
+  const {
+    id,
+    title,
+    address,
+    addedphotos,
+    perks,
+    description,
+    extraInfo,
+    checkIn,
+    checkOut,
+    maxGuests,
+    price
+  } = req.body;
+  jwt.verify(token, process.env.jwt_secret, {}, async (err, userInfo) => {
+    if (err) throw err;
+    const placeDoc = await Places.findById(id);
+    if (userInfo.id === placeDoc.owner.toString()) {
+        placeDoc.set({
+        title,
+        address,
+        addedphotos,
+        perks,
+        description,
+        extraInfo,
+        checkIn,
+        checkOut,
+        maxGuests,
+        price
+      });
+      await placeDoc.save()
+      res.json("ok");
+    }
+  });
+});
+
+router.get('/places', async(req,res)=>{
+  res.json(await Places.find())
+})
 
 module.exports = router;
